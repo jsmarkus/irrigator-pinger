@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+var device = require('./lib/emulator/device')
+  , config = require('./lib/emulator/dev-config');
+
+
+config.servers.forEach(function (srv) {
+	device.listen(srv);
+});
+

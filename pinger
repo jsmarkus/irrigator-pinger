@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+
+var sys = require('sys')
+  , config = require('./lib/pinger/dev-config')
+  , Client = require('./lib/pinger/client').Client;
+
+
+var reports = [];
+
+config.servers.forEach(function (srv) {
+	var cl = new Client(srv);
+	cl.on('dead', processDead);
+	cl.on('alive', processAlive);
+	cl.check(srv);
+});
+
+var reportTimeoutHandle = setTimeout(function () {
+	sys.puts('Something is wrong. Report collection timeout. Partial report follows\n');
+	report();
+	process.exit();
+}, 20000);
+
+
+function processDead (hostport) {
+	reports.push([hostport, 'dead']);
+	if(reports.length >= config.servers.length) {
+		clearTimeout(reportTimeoutHandle);
+		report();
+	}
+}
+
+function processAlive (hostport) {
+	reports.push([hostport, 'alive']);
+	if(reports.length >= config.servers.length) {
+		clearTimeout(reportTimeoutHandle);
+		report();
+	}
+}
+
+function report () {
+	var r = reports.map(function (line) {
+		return line.join('\t:\t');
+	}).join('\n');
+	sys.puts(r);
+}
